@@ -13,6 +13,10 @@ on:
 permissions:
   contents: read
 
+env:
+  DEFAULT_DEPLOY_HOST: dprogger.online
+  DEFAULT_DEPLOY_USER: root
+
 jobs:
   deploy:
     name: Deploy To Server
@@ -26,11 +30,24 @@ jobs:
       (github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'master'))
 
     steps:
+      - name: Validate deploy config
+        shell: bash
+        env:
+          EFFECTIVE_DEPLOY_HOST: ${{ secrets.DEPLOY_HOST != '' && secrets.DEPLOY_HOST || env.DEFAULT_DEPLOY_HOST }}
+          EFFECTIVE_DEPLOY_USER: ${{ secrets.DEPLOY_USER != '' && secrets.DEPLOY_USER || env.DEFAULT_DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        run: |
+          [ -n "$EFFECTIVE_DEPLOY_HOST" ] || { echo "Missing DEPLOY_HOST"; exit 1; }
+          [ -n "$EFFECTIVE_DEPLOY_USER" ] || { echo "Missing DEPLOY_USER"; exit 1; }
+          [ -n "$DEPLOY_SSH_KEY" ] || { echo "Missing DEPLOY_SSH_KEY"; exit 1; }
+          [ -n "$GHCR_TOKEN" ] || { echo "Missing GHCR_TOKEN"; exit 1; }
+
       - name: Deploy latest image
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
+          host: ${{ secrets.DEPLOY_HOST != '' && secrets.DEPLOY_HOST || env.DEFAULT_DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER != '' && secrets.DEPLOY_USER || env.DEFAULT_DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script_stop: true
           script: |
