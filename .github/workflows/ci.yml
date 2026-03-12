@@ -39,10 +39,10 @@ jobs:
         run: go test -v ./...
 
       - name: Build url-service
-        run: go build -v ./url-service
+        run: go build -v -o /tmp/url-service ./url-service
 
       - name: Build api-gateway
-        run: go build -v ./api-gateway
+        run: go build -v -o /tmp/api-gateway ./api-gateway
 
   docker-image:
     runs-on: ubuntu-latest
