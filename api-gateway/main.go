@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/Didar1505/url-shortener/api-gateway/client"
 	"github.com/Didar1505/url-shortener/api-gateway/handler"
@@ -11,7 +12,12 @@ import (
 )
 
 func main() {
-	conn, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	urlServiceAddr := os.Getenv("URL_SERVICE_ADDR")
+	if urlServiceAddr == "" {
+		urlServiceAddr = "dprogger.online:50051"
+	}
+
+	conn, err := grpc.Dial(urlServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("failed to connect to gRPC server: %v", err)
 	}
@@ -25,7 +31,7 @@ func main() {
 	router.POST("/shorten", urlHandler.CreateShortURL)
 	router.GET("/u/:code", urlHandler.RedirectToOriginalURL)
 
-	log.Println("API Gateway is running on :8080")
+	log.Printf("API Gateway is running on :8080 (gRPC target: %s)", urlServiceAddr)
 
 	if err := router.Run(":8080"); err != nil {
 		log.Fatalf("failed to run API gateway: %v", err)

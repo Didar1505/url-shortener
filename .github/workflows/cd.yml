@@ -44,7 +44,7 @@ jobs:
           [ -n "$DEPLOY_SSH_KEY" ] || { echo "Missing DEPLOY_SSH_KEY"; exit 1; }
           [ -n "$GHCR_TOKEN" ] || { echo "Missing GHCR_TOKEN"; exit 1; }
 
-      - name: Deploy latest image
+      - name: Deploy latest images
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.DEPLOY_HOST != '' && secrets.DEPLOY_HOST || env.DEFAULT_DEPLOY_HOST }}
@@ -53,18 +53,37 @@ jobs:
           script_stop: true
           script: |
             set -e
-            IMAGE="ghcr.io/didar1505/url-shortener:latest"
-            CONTAINER_NAME="url-service"
+            URL_SERVICE_IMAGE="ghcr.io/didar1505/url-shortener:latest"
+            API_GATEWAY_IMAGE="ghcr.io/didar1505/url-shortener-api-gateway:latest"
+            URL_SERVICE_CONTAINER="url-service"
+            API_GATEWAY_CONTAINER="api-gateway"
+            NETWORK_NAME="url-shortener-net"
 
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ github.repository_owner }}" --password-stdin
-            docker pull "$IMAGE"
+            docker pull "$URL_SERVICE_IMAGE"
+            docker pull "$API_GATEWAY_IMAGE"
 
-            if docker ps -a --format '{{.Names}}' | grep -Eq "^${CONTAINER_NAME}$"; then
-              docker rm -f "$CONTAINER_NAME"
+            if ! docker network inspect "$NETWORK_NAME" >/dev/null 2>&1; then
+              docker network create "$NETWORK_NAME"
             fi
 
+            if docker ps -a --format '{{.Names}}' | grep -Eq "^${URL_SERVICE_CONTAINER}$"; then
+              docker rm -f "$URL_SERVICE_CONTAINER"
+            fi
             docker run -d \
-              --name "$CONTAINER_NAME" \
+              --name "$URL_SERVICE_CONTAINER" \
               --restart unless-stopped \
+              --network "$NETWORK_NAME" \
               -p 50051:50051 \
-              "$IMAGE"
+              "$URL_SERVICE_IMAGE"
+
+            if docker ps -a --format '{{.Names}}' | grep -Eq "^${API_GATEWAY_CONTAINER}$"; then
+              docker rm -f "$API_GATEWAY_CONTAINER"
+            fi
+            docker run -d \
+              --name "$API_GATEWAY_CONTAINER" \
+              --restart unless-stopped \
+              --network "$NETWORK_NAME" \
+              -p 8080:8080 \
+              -e URL_SERVICE_ADDR=url-service:50051 \
+              "$API_GATEWAY_IMAGE"

@@ -14,7 +14,7 @@ import (
 func TestCreateShortURL_Success(t *testing.T) {
 	urlStore := store.NewMemoryStore()
 	generator := logic.NewCodeGenerator(6)
-	srv := NewURLShortenerServer(urlStore, generator, "http://localhost:8080")
+	srv := NewURLShortenerServer(urlStore, generator, "http://dprogger.online:8080")
 
 	resp, err := srv.CreateShortURL(context.Background(), &pb.CreateShortURLRequest{
 		OriginalUrl: "https://example.com",
@@ -35,7 +35,7 @@ func TestCreateShortURL_Success(t *testing.T) {
 func TestCreateShortURL_InvalidURL(t *testing.T) {
 	urlStore := store.NewMemoryStore()
 	generator := logic.NewCodeGenerator(6)
-	srv := NewURLShortenerServer(urlStore, generator, "http://localhost:8080")
+	srv := NewURLShortenerServer(urlStore, generator, "http://:8080")
 
 	_, err := srv.CreateShortURL(context.Background(), &pb.CreateShortURLRequest{
 		OriginalUrl: "not-a-valid-url",
@@ -62,7 +62,7 @@ func TestGetOriginalURL_Success(t *testing.T) {
 	}
 
 	generator := logic.NewCodeGenerator(6)
-	srv := NewURLShortenerServer(urlStore, generator, "http://localhost:8080")
+	srv := NewURLShortenerServer(urlStore, generator, "http://dprogger.online:8080")
 
 	resp, err := srv.GetOriginalURL(context.Background(), &pb.GetOriginalURLRequest{
 		ShortCode: "abc123",
@@ -79,7 +79,7 @@ func TestGetOriginalURL_Success(t *testing.T) {
 func TestGetOriginalURL_NotFound(t *testing.T) {
 	urlStore := store.NewMemoryStore()
 	generator := logic.NewCodeGenerator(6)
-	srv := NewURLShortenerServer(urlStore, generator, "http://localhost:8080")
+	srv := NewURLShortenerServer(urlStore, generator, "http://dprogger.online:8080")
 
 	_, err := srv.GetOriginalURL(context.Background(), &pb.GetOriginalURLRequest{
 		ShortCode: "missing",

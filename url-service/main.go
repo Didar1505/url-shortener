@@ -19,7 +19,7 @@ func main() {
 
 	urlStore := store.NewMemoryStore()
 	codeGenerator := logic.NewCodeGenerator(6)
-	urlServer := server.NewURLShortenerServer(urlStore, codeGenerator, "http://localhost:8080")
+	urlServer := server.NewURLShortenerServer(urlStore, codeGenerator, "http://dprogger.online:8080")
 
 	grpcServer := grpc.NewServer()
 	pb.RegisterURLShortenerServiceServer(grpcServer, urlServer)
